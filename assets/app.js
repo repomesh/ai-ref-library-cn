@@ -284,20 +284,24 @@ function renderCostume() {
 function resolveOriginal(lib, base, name) {
   var local = LOCAL[lib] ? (LOCAL[lib] + base + ".png") : "";
   var remote = LIB[lib].remote(base);
-  localOk = !!local;
-  setDownload(local || remote, name);
   var im = $("#mimg");
+  localOk = false;
+  // 下载链接默认指向源站，避免本地路径 404 时点出错误页面
+  setDownload(remote, name);
   im.onerror = function () {
     if (local && im.getAttribute("src") === local) {
-      localOk = false;
-      setDownload(remote, name);
       im.onerror = function () { im.onerror = null; im.src = thumb(lib, base); };
       im.src = remote;
     } else { im.onerror = null; im.src = thumb(lib, base); }
   };
   im.onload = function () {
+    var d = im.naturalWidth + "×" + im.naturalHeight;
     var el = $("#mdim");
-    if (el) el.textContent = im.naturalWidth + "×" + im.naturalHeight;
+    if (el) el.textContent = d;
+    if (local && im.getAttribute("src") === local) {
+      localOk = true;
+      setDownload(local, name);
+    }
   };
   im.src = local || remote;
 }
