@@ -230,6 +230,14 @@ function render(gridOnly) {
   else renderCostume();
 }
 
+function optimizeFirstScreen() {
+  var imgs = document.querySelectorAll("#grid .card img");
+  for (var i = 0; i < imgs.length && i < 10; i++) {
+    imgs[i].loading = "eager";
+    imgs[i].setAttribute("fetchpriority", "high");
+  }
+}
+
 function renderFace() {
   var d = data("face");
   var list = d.items.filter(faceMatch);
@@ -237,6 +245,7 @@ function renderFace() {
   $("#grid").innerHTML = list.map(faceCard).join("");
   $("#count").textContent = "符合条件：" + list.length + " 张";
   $("#grid").querySelectorAll(".card").forEach(function (c) { c.onclick = function () { openFace(c.dataset.id); }; });
+  optimizeFirstScreen();
 }
 
 function renderPose() {
@@ -262,6 +271,7 @@ function renderPose() {
       b.onclick = function (e) { e.stopPropagation(); openPose(b.dataset.k, b.dataset.a); };
     });
   });
+  optimizeFirstScreen();
 }
 
 function poseCardOne(p, a) {
@@ -278,11 +288,12 @@ function renderCostume() {
   $("#grid").innerHTML = list.map(costumeCard).join("");
   $("#count").textContent = "符合条件：" + list.length + " 套";
   $("#grid").querySelectorAll(".card").forEach(function (c) { c.onclick = function () { openCostume(c.dataset.id); }; });
+  optimizeFirstScreen();
 }
 
 /* ---------- 弹窗 ---------- */
 function resolveOriginal(lib, base, name) {
-  var local = LOCAL[lib] ? (LOCAL[lib] + base + ".png") : "";
+  var local = (location.protocol === "file:" && LOCAL[lib]) ? (LOCAL[lib] + base + ".png") : "";
   var remote = LIB[lib].remote(base);
   var im = $("#mimg");
   localOk = false;
@@ -504,9 +515,7 @@ var EN = {
 
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 function loadAll() {
-  return ["face", "pose", "costume"].reduce(function (p, k) {
-    return p.then(function () { return loadLib(k); });
-  }, Promise.resolve());
+  return Promise.all(["face", "pose", "costume"].map(function (k) { return loadLib(k); }));
 }
 function poolPose() {
   var arr = data("pose").poses.filter(function (p) { return COMBO.poseSeries < 0 || p.s === COMBO.poseSeries; });

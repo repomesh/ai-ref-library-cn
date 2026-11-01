@@ -1,6 +1,6 @@
 # AI 作图素材库 · 中文版（脸 / 姿势 / 服装）
 
-<img width="2650" height="1864" alt="Image" src="https://github.com/user-attachments/assets/7d9d60fb-20e0-4cca-9797-91281727dfa2" />
+<img width="2764" height="1858" alt="Image" src="https://github.com/user-attachments/assets/0184a8eb-48fe-4d26-8237-9dc65813843f" />
 
 把作者 **あぎ / ギア（[@giaaibusi](https://x.com/giaaibusi)）** 公开的三套 AI 作图参考素材，做成了一个中文检索界面：
 
