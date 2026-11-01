@@ -257,7 +257,7 @@ function renderPose() {
   $("#count").textContent = "符合条件：" + shown + (S.pose.view === "one" ? " 张" : " 个姿势");
   $("#grid").querySelectorAll(".card").forEach(function (c) {
     var ph = c.querySelector(".ph");
-    ph.onclick = function () { openPose(c.dataset.k || c.dataset.key, ph.dataset.a || S.pose.ang || "正面"); };
+    c.onclick = function () { openPose(c.dataset.k || c.dataset.key, ph.dataset.a || S.pose.ang || "正面"); };
     c.querySelectorAll(".strip button").forEach(function (b) {
       b.onclick = function (e) { e.stopPropagation(); openPose(b.dataset.k, b.dataset.a); };
     });

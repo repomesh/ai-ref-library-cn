@@ -204,3 +204,10 @@ footer .links{margin:0 0 16px}
 .refmode button.on{background:var(--ink);color:#fff;font-weight:600}
 .refmode button.on:hover{background:#000;color:#fff}
 @media (max-width:720px){.refmode{margin-left:0}.refmode-label{display:none}}
+
+/* ---------- 稳定性：预留高度，减少布局抖动 ---------- */
+main{min-height:78vh}
+#toolbar{min-height:56px}
+.card{cursor:pointer}
+.ph{cursor:zoom-in}
+footer{min-height:150px}
