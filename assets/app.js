@@ -43,7 +43,8 @@ var cache = {};
 var cur = null;      // 当前弹窗条目
 var curLib = null;
 var curAngle = "";   // 姿势库当前机位
-var poseView = "line";  // line | depth
+var REF_MODE = "line";   // 全局：line | depth（姿势参考图形式）
+try { REF_MODE = window.localStorage.getItem("refMode") || "line"; } catch (e) { }
 var localOk = true;  // 本地原图是否可用（用于下载链接）
 
 function data(lib) { return cache[lib].data; }
@@ -323,10 +324,45 @@ function openFace(id) {
   if (cur.sj) chips += '<span class="chip en">' + esc(cur.sj) + "</span>";
   $("#mextra").innerHTML = '<div class="sect">造型</div>' + (chips || '<span style="color:#9a9aa4;font-size:12px">无（正面向·纯色背景脸部特写）</span>');
   $("#mdepth").hidden = true;
-  $("#mview").hidden = true;
   $("#mdl").textContent = "下载原图（PNG 高清）";
   $("#mcopy").dataset.lib = "face";
   showModal();
+}
+
+function paintPoseImage(base, depthUrl) {
+  var im = $("#mimg");
+  if (REF_MODE === "depth") {
+    im.referrerPolicy = "no-referrer";
+    im.onerror = function () {
+      im.onerror = null;
+      resolveOriginal("pose", base, base + ".png");
+    };
+    im.onload = function () {
+      var el = $("#mdim");
+      if (el) el.textContent = im.naturalWidth + "×" + im.naturalHeight;
+    };
+    im.src = depthUrl;
+  } else {
+    im.referrerPolicy = "";
+    resolveOriginal("pose", base, base + ".png");
+  }
+}
+
+function syncModeUI() {
+  document.querySelectorAll("#refModeSeg button").forEach(function (b) {
+    b.classList.toggle("on", b.dataset.mode === REF_MODE);
+    b.setAttribute("aria-pressed", b.dataset.mode === REF_MODE ? "true" : "false");
+  });
+}
+
+function setRefMode(m) {
+  if (m === REF_MODE) return;
+  REF_MODE = m;
+  try { window.localStorage.setItem("refMode", m); } catch (e) { }
+  trackEvent("ref_mode", { mode: m });
+  syncModeUI();
+  if (S.lib === "combo" && cache.face) renderCombo();
+  if ($("#modal").classList.contains("on") && curLib === "pose" && cur) openPose(cur.key, curAngle);
 }
 
 function openPose(key, angle) {
@@ -353,38 +389,7 @@ function openPose(key, angle) {
   $("#mdepth").href = depthUrl;
   $("#mdepth").hidden = false;
   $("#mdepth").onclick = function () { trackEvent("depth_link", { id: cur.id, angle: curAngle }); };
-  $("#mview").hidden = false;
-  function paintView() {
-    $("#mview").querySelectorAll("button").forEach(function (b) {
-      b.classList.toggle("on", b.dataset.v === poseView);
-    });
-    var im = $("#mimg");
-    if (poseView === "depth") {
-      im.referrerPolicy = "no-referrer";
-      im.onerror = function () {
-        im.onerror = null;
-        poseView = "line";
-        paintView();
-      };
-      im.onload = function () {
-        var el = $("#mdim");
-        if (el) el.textContent = im.naturalWidth + "×" + im.naturalHeight;
-      };
-      im.src = depthUrl;
-    } else {
-      im.referrerPolicy = "";
-      resolveOriginal("pose", base, base + ".png");
-    }
-  }
-  $("#mview").querySelectorAll("button").forEach(function (b) {
-    b.onclick = function () {
-      if (poseView === b.dataset.v) return;
-      poseView = b.dataset.v;
-      trackEvent("pose_view", { mode: poseView, id: cur.id });
-      paintView();
-    };
-  });
-  paintView();
+  paintPoseImage(base, depthUrl);
   $("#mcopy").dataset.lib = "pose";
   showModal();
 }
@@ -401,7 +406,6 @@ function openCostume(id) {
   $("#mextra").innerHTML = '<div class="sect">中文标签</div>' + cur.zh.map(function (t) { return '<span class="chip">' + esc(t) + "</span>"; }).join("")
     + '<div class="sect">英文标签（可直接搜）</div>' + cur.kw.map(function (t) { return '<span class="chip en">' + esc(t) + "</span>"; }).join("");
   $("#mdepth").hidden = true;
-  $("#mview").hidden = true;
   $("#mdl").textContent = "下载原图（PNG · 长边约 2048）";
   $("#mcopy").dataset.lib = "costume";
   showModal();
@@ -544,7 +548,12 @@ function comboParts() {
     cEn: c.kw.slice(0, 10).join(", "),
     pSer: pd.series[p.s].name,
     pBase: pBase,
-    urls: { face: LIB.face.remote(f.id), costume: LIB.costume.remote(c.id), pose: LIB.pose.remote(pBase) }
+    depth: REF_MODE === "depth",
+    urls: {
+      face: LIB.face.remote(f.id),
+      costume: LIB.costume.remote(c.id),
+      pose: REF_MODE === "depth" ? ("https://ai-pose-depth-gallery.pages.dev/img/" + pBase + ".png") : LIB.pose.remote(pBase)
+    }
   };
 }
 
@@ -659,11 +668,13 @@ function singleEn(x) {
 
 function promptZh() {
   var x = comboParts();
-  return COMBO_MODE === "single" ? singleZh(x) : linksZh(x);
+  var t = COMBO_MODE === "single" ? singleZh(x) : linksZh(x);
+  return x.depth ? t + NL + NL + "注：姿势参考图是 depth（深度）版，白=近、黑=远；四肢的前后遮挡关系以它为准。" : t;
 }
 function promptEn() {
   var x = comboParts();
-  return COMBO_MODE === "single" ? singleEn(x) : linksEn(x);
+  var t = COMBO_MODE === "single" ? singleEn(x) : linksEn(x);
+  return x.depth ? t + NL + NL + "NOTE: the pose reference is a DEPTH map (white = near, black = far). Follow its occlusion ordering." : t;
 }
 
 function comboUrls() {
@@ -714,7 +725,7 @@ function makeSheet() {
     var panels = [
       { url: x.urls.face, fb: thumb("face", x.f.id), label: "① 脸 · " + x.f.id, sub: x.fDesc },
       { url: x.urls.costume, fb: thumb("costume", x.c.id), label: "② 服装 · " + x.c.id, sub: x.cCat + " · " + x.c.zh.slice(0, 4).join(" ") },
-      { url: x.urls.pose, fb: thumb("pose", x.pBase), label: "③ 姿势 · " + x.p.id, sub: x.p.zh }
+      { url: x.urls.pose, fb: thumb("pose", x.pBase), label: "③ 姿势" + (x.depth ? " · depth" : "") + " · " + x.p.id, sub: x.p.zh }
     ];
     var loaded = [];
     var i = 0;
@@ -828,15 +839,15 @@ function renderCombo() {
   $("#count").textContent = "已随机一组 · 每格可单独换";
 
   var x = comboParts();
-  function slot(lib, title, base, desc, ratio) {
+  function slot(lib, title, base, desc, ratio, src) {
     return '<div class="slot"><div class="slot-h"><span>' + title + '</span><button data-reroll="' + lib + '">🔄 换一个</button></div>'
-      + '<div class="ph ' + ratio + '" data-open="' + lib + '"><img loading="lazy" src="' + thumb(lib, base) + '" alt="">'
+      + '<div class="ph ' + ratio + '" data-open="' + lib + '"><img loading="lazy" src="' + (src || thumb(lib, base)) + '" alt="">'
       + '<div class="badge">' + base + "</div></div>"
       + '<div class="slot-m"><b>' + esc(desc) + "</b></div></div>";
   }
   var html = slot("face", "① 脸", x.f.id, x.fDesc, "r45")
     + slot("costume", "② 服装", x.c.id, x.cCat + " · " + x.c.zh.slice(0, 4).join(" "), "r23")
-    + slot("pose", "③ 姿势", x.pBase, x.p.zh + " · " + x.p.cat, "r34");
+    + slot("pose", "③ 姿势" + (REF_MODE === "depth" ? " · depth" : ""), x.pBase, x.p.zh + " · " + x.p.cat, "r34", REF_MODE === "depth" ? x.urls.pose : "");
 
   var modeSeg = '<div class="seg" id="modeSeg">'
     + '<button data-mode="links"' + (COMBO_MODE === "links" ? ' class="on"' : "") + ">参考图 = 链接</button>"
@@ -980,6 +991,12 @@ document.addEventListener("click", function (e) {
     }, 9000);
   } catch (e) { }
 })();
+
+/* ---------- 全局参考图形式（线稿 / depth） ---------- */
+document.querySelectorAll("#refModeSeg button").forEach(function (b) {
+  b.onclick = function () { setRefMode(b.dataset.mode); };
+});
+syncModeUI();
 
 switchLib("combo");
 })();

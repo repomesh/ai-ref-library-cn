@@ -195,3 +195,12 @@ footer .links{margin:0 0 16px}
 
 /* hidden 属性要能压过上面的 display:flex */
 .mview[hidden],.acts a[hidden],#mdepth[hidden]{display:none !important}
+
+/* ---------- 全局参考图形式（线稿 / depth） ---------- */
+.refmode{display:flex;align-items:center;gap:2px;margin-left:auto;border:1px solid var(--line);background:#fff;border-radius:999px;padding:3px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.refmode-label{font-size:11.5px;color:var(--dim);padding:0 8px 0 10px;letter-spacing:.02em}
+.refmode button{border:0;background:transparent;border-radius:999px;padding:5px 13px;font-size:12.5px;color:#5a5a63;transition:background .15s,color .15s}
+.refmode button:hover{color:#111;background:#f3f3f6}
+.refmode button.on{background:var(--ink);color:#fff;font-weight:600}
+.refmode button.on:hover{background:#000;color:#fff}
+@media (max-width:720px){.refmode{margin-left:0}.refmode-label{display:none}}
