@@ -43,6 +43,7 @@ var cache = {};
 var cur = null;      // 当前弹窗条目
 var curLib = null;
 var curAngle = "";   // 姿势库当前机位
+var poseView = "line";  // line | depth
 var localOk = true;  // 本地原图是否可用（用于下载链接）
 
 function data(lib) { return cache[lib].data; }
@@ -322,6 +323,7 @@ function openFace(id) {
   if (cur.sj) chips += '<span class="chip en">' + esc(cur.sj) + "</span>";
   $("#mextra").innerHTML = '<div class="sect">造型</div>' + (chips || '<span style="color:#9a9aa4;font-size:12px">无（正面向·纯色背景脸部特写）</span>');
   $("#mdepth").hidden = true;
+  $("#mview").hidden = true;
   $("#mdl").textContent = "下载原图（PNG 高清）";
   $("#mcopy").dataset.lib = "face";
   showModal();
@@ -347,9 +349,42 @@ function openPose(key, angle) {
     b.onclick = function () { openPose(key, b.dataset.a); };
   });
   $("#mdl").textContent = "下载原图（PNG · 900×1200）";
-  $("#mdepth").href = "https://ai-pose-depth-gallery.pages.dev/img/" + base + ".png";
+  var depthUrl = "https://ai-pose-depth-gallery.pages.dev/img/" + base + ".png";
+  $("#mdepth").href = depthUrl;
   $("#mdepth").hidden = false;
   $("#mdepth").onclick = function () { trackEvent("depth_link", { id: cur.id, angle: curAngle }); };
+  $("#mview").hidden = false;
+  function paintView() {
+    $("#mview").querySelectorAll("button").forEach(function (b) {
+      b.classList.toggle("on", b.dataset.v === poseView);
+    });
+    var im = $("#mimg");
+    if (poseView === "depth") {
+      im.referrerPolicy = "no-referrer";
+      im.onerror = function () {
+        im.onerror = null;
+        poseView = "line";
+        paintView();
+      };
+      im.onload = function () {
+        var el = $("#mdim");
+        if (el) el.textContent = im.naturalWidth + "×" + im.naturalHeight;
+      };
+      im.src = depthUrl;
+    } else {
+      im.referrerPolicy = "";
+      resolveOriginal("pose", base, base + ".png");
+    }
+  }
+  $("#mview").querySelectorAll("button").forEach(function (b) {
+    b.onclick = function () {
+      if (poseView === b.dataset.v) return;
+      poseView = b.dataset.v;
+      trackEvent("pose_view", { mode: poseView, id: cur.id });
+      paintView();
+    };
+  });
+  paintView();
   $("#mcopy").dataset.lib = "pose";
   showModal();
 }
@@ -366,6 +401,7 @@ function openCostume(id) {
   $("#mextra").innerHTML = '<div class="sect">中文标签</div>' + cur.zh.map(function (t) { return '<span class="chip">' + esc(t) + "</span>"; }).join("")
     + '<div class="sect">英文标签（可直接搜）</div>' + cur.kw.map(function (t) { return '<span class="chip en">' + esc(t) + "</span>"; }).join("");
   $("#mdepth").hidden = true;
+  $("#mview").hidden = true;
   $("#mdl").textContent = "下载原图（PNG · 长边约 2048）";
   $("#mcopy").dataset.lib = "costume";
   showModal();
