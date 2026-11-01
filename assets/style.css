@@ -192,3 +192,6 @@ footer .links{margin:0 0 16px}
 .mview button.on{background:var(--ink);color:#fff;font-weight:600}
 .mview button:hover{color:#111}
 .mview button.on:hover{color:#fff}
+
+/* hidden 属性要能压过上面的 display:flex */
+.mview[hidden],.acts a[hidden],#mdepth[hidden]{display:none !important}
