@@ -339,6 +339,7 @@ function openFace(id) {
   if (cur.sj) chips += '<span class="chip en">' + esc(cur.sj) + "</span>";
   $("#mextra").innerHTML = '<div class="sect">造型</div>' + (chips || '<span style="color:#9a9aa4;font-size:12px">无（正面向·纯色背景脸部特写）</span>');
   $("#mdepth").hidden = true;
+  $("#mMode").hidden = true;
   $("#mdl").textContent = "下载原图（PNG 高清）";
   $("#mcopy").dataset.lib = "face";
   showModal();
@@ -364,7 +365,7 @@ function paintPoseImage(base, depthUrl) {
 }
 
 function syncModeUI() {
-  document.querySelectorAll("#refModeSeg button").forEach(function (b) {
+  document.querySelectorAll("#refModeSeg button, #mMode button").forEach(function (b) {
     b.classList.toggle("on", b.dataset.mode === REF_MODE);
     b.setAttribute("aria-pressed", b.dataset.mode === REF_MODE ? "true" : "false");
   });
@@ -404,6 +405,11 @@ function openPose(key, angle) {
   $("#mdepth").href = depthUrl;
   $("#mdepth").hidden = false;
   $("#mdepth").onclick = function () { trackEvent("depth_link", { id: cur.id, angle: curAngle }); };
+  $("#mMode").hidden = false;
+  $("#mMode").querySelectorAll("button").forEach(function (b) {
+    b.classList.toggle("on", b.dataset.mode === REF_MODE);
+    b.onclick = function () { setRefMode(b.dataset.mode); };
+  });
   paintPoseImage(base, depthUrl);
   $("#mcopy").dataset.lib = "pose";
   showModal();
@@ -421,6 +427,7 @@ function openCostume(id) {
   $("#mextra").innerHTML = '<div class="sect">中文标签</div>' + cur.zh.map(function (t) { return '<span class="chip">' + esc(t) + "</span>"; }).join("")
     + '<div class="sect">英文标签（可直接搜）</div>' + cur.kw.map(function (t) { return '<span class="chip en">' + esc(t) + "</span>"; }).join("");
   $("#mdepth").hidden = true;
+  $("#mMode").hidden = true;
   $("#mdl").textContent = "下载原图（PNG · 长边约 2048）";
   $("#mcopy").dataset.lib = "costume";
   showModal();
