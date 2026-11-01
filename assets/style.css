@@ -181,3 +181,7 @@ footer .links{margin:0 0 16px}
 .grat-trigger:hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(230,161,44,.5), inset 0 1px 0 rgba(255,255,255,.7)}
 .grat-trigger:active{transform:translateY(0)}
 .grat-panel{border-color:#f0d7a3;box-shadow:0 18px 44px rgba(120,80,0,.18)}
+
+/* ---------- 弹窗里的次级外链 ---------- */
+.acts a.ghost{background:#fff;color:#3a3a42;border:1px solid var(--line);font-size:12.5px;padding:8px;display:flex;align-items:center;justify-content:center;gap:4px}
+.acts a.ghost:hover{border-color:#c9c9d2;color:#111}
